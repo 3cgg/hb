@@ -38,6 +38,19 @@
             <version>1.4.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>libme</groupId>
+            <artifactId>lib-kernel</artifactId>
+            <version>1.0.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+
+            </exclusions>
+        </dependency>
+
 
     </dependencies>
 

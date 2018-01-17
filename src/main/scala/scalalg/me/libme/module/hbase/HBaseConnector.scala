@@ -9,6 +9,8 @@ import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, HColumnDescriptor, HTableDescriptor, TableName}
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.collection.{JavaConversions, mutable}
+
 /**
   * Created by J on 2018/1/16.
   */
@@ -29,24 +31,40 @@ class HBaseConnector(hbaseConfig:HBaseConfig) {
 
     var conn:Connection=_
 
+    var tableOperations:TableOperations=_
+
+    var columnOperations:ColumnOperations=_
+
+    var queryOperations:QueryOperations=_
+
     def connect():HBaseExecutor={
 
       val conf = HBaseConfiguration.create
-      conf.set("hbase.zookeeper.property.clientPort", "2181")
+//      conf.set("hbase.zookeeper.property.clientPort", "2181")
       //    conf.set("zookeeper.znode.parent", "/hbase-unsecure")
       conf.set("hbase.zookeeper.quorum", config connectString)
 
       this.conn= ConnectionFactory.createConnection(conf)
+      this.tableOperations=new TableOperations
+      this.columnOperations=new ColumnOperations
+      this.queryOperations=new QueryOperations
 
       return this
     }
 
+
+
     /**
       * be aware of column family, we recommend the number of that is up to two
       */
-    object TableOperations{
+    class TableOperations{
 
-      val logger:Logger=LoggerFactory.getLogger(TableOperations.getClass)
+      private[this] val logger:Logger=LoggerFactory.getLogger(classOf[TableOperations])
+
+
+      def create(tableName:String): Unit ={
+        create(tableName,null,null)
+      }
 
       def create(tableName:String,cfName1:String): Unit ={
         create(tableName,cfName1,null)
@@ -97,7 +115,7 @@ class HBaseConnector(hbaseConfig:HBaseConfig) {
         val tn = TableName.valueOf(tableName)
         val admin = conn.getAdmin
         if (admin.tableExists(tn)){
-          admin.enableTable(tn)
+          admin.disableTable(tn)
           admin.deleteTable(tn)
           logger.info("enable table : "+tableName)
         }
@@ -110,9 +128,9 @@ class HBaseConnector(hbaseConfig:HBaseConfig) {
     /**
       *
       */
-    object ColumnOperations {
+    class ColumnOperations {
 
-      val logger: Logger = LoggerFactory.getLogger(ColumnOperations.getClass)
+      val logger: Logger = LoggerFactory.getLogger(classOf[ColumnOperations])
 
 
       def insert(tableName:String,family:String,column:String,key:String,value:String): Unit ={
@@ -138,6 +156,14 @@ class HBaseConnector(hbaseConfig:HBaseConfig) {
       }
 
 
+      /**
+        *
+        * @param tableName
+        * @param family
+        * @param column
+        * @param row
+        * @return
+        */
       def get(tableName:String,family:String,column:String,row:String):String={
         var table:Table=null
         try{
@@ -159,9 +185,9 @@ class HBaseConnector(hbaseConfig:HBaseConfig) {
     }
 
 
-    object QueryOperations {
+    class QueryOperations {
 
-      val logger: Logger = LoggerFactory.getLogger(QueryOperations.getClass)
+      private[this] val logger: Logger = LoggerFactory.getLogger(classOf[QueryOperations])
 
 
       /**
@@ -183,9 +209,10 @@ class HBaseConnector(hbaseConfig:HBaseConfig) {
           val scan=new Scan()
           scan.addColumn(family.getBytes(),column.getBytes())
           scanner=table.getScanner(scan)
-          var result:Result=null
-          while((result=scanner.next())!=null){
+          var result:Result=scanner.next()
+          while(result!=null){
             map.put(Bytes.toString(result.getRow),Bytes.toString(result.getValue(family.getBytes(),column.getBytes())))
+            result=scanner.next()
           }
           return map
         }finally{
@@ -196,15 +223,28 @@ class HBaseConnector(hbaseConfig:HBaseConfig) {
         }
       }
 
-      def getRow(tableName:String,family:String,row:String): util.NavigableMap[Array[Byte], util.NavigableMap[Array[Byte], util.NavigableMap[Long, Array[Byte]]]]={
+
+      /**
+        *
+        * latest version for all columns of this family
+        * Map&lt;rowid,&lt;column,value>>
+        * @param tableName
+        * @param row
+        * @return
+        */
+      def getRow(tableName:String,family:String,row:String): mutable.Map[String,Any]={
         var table:Table=null
         try{
           val userTable = TableName.valueOf(tableName)
           table=conn.getTable(userTable)
           val get=new Get(row.getBytes())
+          get.addFamily(Bytes.toBytes(family))
           val result=table.get(get)
-          val value=result.getMap
-          return value
+          val value=JavaConversions.mapAsScalaMap(result.getMap)
+            .map(entry=>{Bytes.toString(entry._1)-> ( JavaConversions.mapAsScalaMap(entry._2).map(cEntry=>{Bytes.toString(cEntry._1)->cEntry._2.lastEntry().getValue}) )})
+          val map=new mutable.HashMap[String,Any]
+          map.put(row,value)
+          return map
         }finally{
           if(table!=null)table.close()
         }

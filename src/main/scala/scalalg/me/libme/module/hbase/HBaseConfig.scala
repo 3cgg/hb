@@ -8,7 +8,4 @@ class HBaseConfig {
 
   var connectString:String=_
 
-
-
-
 }

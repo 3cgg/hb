@@ -1,6 +1,8 @@
 package test.me.libme.module.hbase;
 
 import me.libme.kernel._c.util.CliParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scalalg.me.libme.module.hbase.HBaseCliParam;
 import scalalg.me.libme.module.hbase.HBaseConfig;
 import scalalg.me.libme.module.hbase.HBaseConnector;
@@ -12,6 +14,8 @@ import java.util.Map;
  * Created by J on 2018/1/17.
  */
 public class TestHBase {
+
+    private static Logger logger= LoggerFactory.getLogger(TestHBase.class);
 
 
     public static void main(String[] args) {
@@ -39,7 +43,7 @@ public class TestHBase {
 
 
         Map<String, String> map = executor.queryOperations().scan(tableName, "artitle", "engish");
-        System.out.println(map);
+        logger.debug(map.toString());
 
         Map rowMap=new HashMap();
 
@@ -47,7 +51,7 @@ public class TestHBase {
             rowMap.put(key,executor.queryOperations().getRow(tableName,"artitle",key));
         });
 
-        System.out.println(rowMap);
+        logger.debug(rowMap.toString());
     }
 
 

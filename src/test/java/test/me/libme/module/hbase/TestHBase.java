@@ -1,11 +1,10 @@
 package test.me.libme.module.hbase;
 
-import me.libme.kernel._c.util.CliParams;
+import me.libme.module.hbase.HBaseConnector;
+import me.libme.module.hbase.KeyValue;
+import me.libme.module.hbase.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scalalg.me.libme.module.hbase.HBaseCliParam;
-import scalalg.me.libme.module.hbase.HBaseConfig;
-import scalalg.me.libme.module.hbase.HBaseConnector;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,14 +19,9 @@ public class TestHBase {
 
     public static void main(String[] args) {
 
-        HBaseConfig hBaseConfig=new HBaseConfig();
-        CliParams cliParams=new CliParams(args)
-                .append(HBaseCliParam.__CONNECT_STRING__(),"one.3cgg.rec");
-        hBaseConfig.connectString_$eq(HBaseCliParam.connectString(cliParams));
-
         String tableName = "blog";
 
-        HBaseConnector.HBaseExecutor executor=new HBaseConnector(hBaseConfig).connect();
+        HBaseConnector.HBaseExecutor executor=new HBaseConnector().connect();
         executor.tableOperations().delete(tableName);
         executor.tableOperations().create(tableName, "artitle", "author");
 
@@ -42,13 +36,13 @@ public class TestHBase {
         //扫描整个表
 
 
-        Map<String, String> map = executor.queryOperations().scan(tableName, "artitle", "engish");
+        Map<Value, KeyValue> map = executor.queryOperations().scan(tableName, "artitle", "engish");
         logger.debug(map.toString());
 
         Map rowMap=new HashMap();
 
         map.forEach((key, value) -> {
-            rowMap.put(key,executor.queryOperations().getRow(tableName,"artitle",key));
+            rowMap.put(key,executor.queryOperations().row(tableName,"artitle"));
         });
 
         logger.debug(rowMap.toString());

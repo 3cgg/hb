@@ -1,11 +1,12 @@
 package test.scalalg.me.libme.module.hbase
 
 import java.awt.image.BufferedImage
-import java.awt.{Color, Graphics2D}
+import java.awt.{Color, Graphics2D, Polygon}
 import java.io.File
 import javax.imageio.ImageIO
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 
 /**
@@ -15,6 +16,7 @@ import scala.collection.mutable
 object Config{
   val width:Int=96
   val arrowLength:Int=227
+  val width45=130
 }
 
 trait Render{
@@ -42,7 +44,13 @@ object Image{
 
 }
 
-case class Part(x:Int,y:Int,width:Int,height:Int) extends Render{
+case class Coordinate(x:Int,y:Int){}
+
+abstract class Shape extends Render{
+
+}
+
+case class Block(x:Int,y:Int,width:Int,height:Int) extends Shape{
 
   var rendered=false
 
@@ -61,28 +69,48 @@ case class Part(x:Int,y:Int,width:Int,height:Int) extends Render{
 
 }
 
-
-
-case class Point(x:Int,y:Int,var up:Line=null,var down:Line=null,var left:Line=null,var right:Line=null)extends Render{
+case class Point(x:Int,y:Int,var up:Line=null,var down:Line=null,var left:Line=null,
+                 var right:Line=null,var upRight:Line=null,var upLeft:Line=null)extends Render{
 
   var rendered=false
 
   override def render()(implicit graphics:Graphics2D): Unit = {
     if (rendered) return ;
     rendered=true
-    emptyPart.render()
+    emptyBlock.render()
     if(up!=null) up.render()
     if(down!=null) down.render()
     if(left!=null) left.render()
     if(right!=null) right.render()
+    if(upRight!=null) upRight.render()
+    if(upLeft!=null) upLeft.render()
+
 
   }
 
-  def emptyPart={new Part(x,y,0,0)}
+  def emptyBlock={new Block(x,y,0,0)}
 
 }
 
-case class Line(parts:List[Part]) extends Render{
+case class Ramp(listBuffer: ListBuffer[Coordinate]) extends Shape{
+
+
+  override def render()(implicit graphics: Graphics2D): Unit = {
+    import java.awt.Color
+    val polygon = new Polygon()
+
+    listBuffer.foreach(coordinate=>{
+      polygon.addPoint(coordinate.x,coordinate.y)
+    })
+    graphics.setColor(Color.yellow)
+    graphics.fillPolygon(polygon)
+
+  }
+
+
+}
+
+case class Line(shapes:List[Shape]) extends Shape{
 
   var next:Point=null
 
@@ -91,12 +119,12 @@ case class Line(parts:List[Part]) extends Render{
   override def render()(implicit graphics:Graphics2D): Unit = {
     if (rendered) return ;
     rendered=true
-    parts.foreach(part=>part.render())
+    shapes.foreach(shape=>shape.render())
     next.render()
 
   }
 
-  def splitNum():Int=parts.size
+  def splitNum():Int=shapes.size
 
 
 }
@@ -105,6 +133,81 @@ case class Line(parts:List[Part]) extends Render{
 abstract class LinkPoint{
 
   def link(start:Point,end:Point):Line
+
+}
+
+class RampDownLink extends LinkPoint{
+
+
+  override def link(start: Point, end: Point): Line = {
+    var length=0
+    var direction= ""
+    if (end.x>start.x && end.y<start.y){
+      direction="R"
+      length=(start.y-end.y)/4
+    }else if (end.x<start.x && end.y<start.y){
+      direction="U"
+      length=(start.x-end.x)/4
+    }
+
+
+    direction match {
+      case "R" =>{
+        val sixPoint= new ListBuffer[Coordinate]
+        val oneStart=new Coordinate(start.x+Config.width,start.y-Config.width45/2)
+        sixPoint+=oneStart
+        val two=new Coordinate(end.x,end.y+Config.width+length/2)
+        sixPoint+=two
+        val three=new Coordinate(end.x,end.y+Config.width)
+        sixPoint+=three
+        val four=new Coordinate(three.x+Config.width,three.y)
+        sixPoint+=four
+        val five=new Coordinate(four.x,four.y+length)
+        sixPoint+=five
+        val six=new Coordinate(oneStart.x,oneStart.y+Config.width45)
+        sixPoint+=six
+
+        sixPoint+=oneStart
+
+        println(sixPoint)
+
+        val line= new Line(List(new Ramp(sixPoint)))
+        line.next=end
+        start.upRight=line
+        end.down=line
+        return line
+      }
+
+      case "U" => {
+
+
+        return null
+      }
+
+    }
+
+
+
+
+
+//    direction match {
+//      case "R" =>{
+//
+//      }
+//
+//      case "U" => {
+//        start.up=line
+//        end.right=line
+//      }
+//
+//    }
+
+//    return line
+
+  }
+
+
+
 
 }
 
@@ -126,34 +229,34 @@ class StraightLink(lengthFun:Int=>List[Int]) extends LinkPoint{
       direction="D"
     }
 
-    def nextPart(part:Part,partLength:Int): Part ={
+    def nextBlock(block:Block,blockLength:Int): Block ={
 
       direction match {
         case "L"=>{
-          new Part(part.x-partLength,part.y,partLength,Config.width)
+          new Block(block.x-blockLength,block.y,blockLength,Config.width)
         }
         case "R"=>{
-          new Part(part.x+part.width,part.y,partLength,Config.width)
+          new Block(block.x+block.width,block.y,blockLength,Config.width)
         }
         case "U"=>{
-          new Part(part.x,part.y-partLength,Config.width,partLength)
+          new Block(block.x,block.y-blockLength,Config.width,blockLength)
         }
         case "D"=>{
-          new Part(part.x,part.y+part.height,Config.width,partLength)
+          new Block(block.x,block.y+block.height,Config.width,blockLength)
         }
       }
 
 
     }
 
-    var currentPart:Part=null
+    var currentBlock:Block=null
 
-    val parts:List[Part]=lengthFun(length).map(partLength=>{
-      currentPart=nextPart(if (currentPart==null) start.emptyPart else currentPart,partLength)
-      currentPart
+    val blocks:List[Block]=lengthFun(length).map(blockLength=>{
+      currentBlock=nextBlock(if (currentBlock==null) start.emptyBlock else currentBlock,blockLength)
+      currentBlock
     })
 
-    val line= new Line(parts)
+    val line= new Line(blocks)
     line.next=end
 
     direction match {
@@ -198,27 +301,28 @@ object TestGraphics2D{
     val bufferedImage=Image.image
     implicit val graphics2D= bufferedImage.createGraphics()
 
-    val start=(3573,2345)
+    val start=(849,2345)
 
 
     val pointMap=List(
-      start->(3573,1397)
+      (849,2345)->(3573,2345)
+      ,
+      (849,2345)->(849,1397),
+      (849,1397)->(849,460),
+
+      (3573,2345)->(3573,1397)
       ,
       (3573,1397)->(3573,460),
       (3573,1397)-> (849,1397),
-      (3573,460)->(849,460),
+      (3573,460)->(849,460)
 
-      start->(849,2345),
-      (849,2345)->(849,1397),
-      (849,1397)->(849,460)
+
       )
 
     println(pointMap)
 
-    val startPoint=Point(start._1,start._2)
 
     val instanceMap=new mutable.HashMap[AnyRef,Point]()
-    instanceMap.put(start,startPoint)
 
     def point(x:Int,y:Int):Point={
 
@@ -228,6 +332,7 @@ object TestGraphics2D{
       return instanceMap.get((x,y)).get
     }
 
+    //val startPoint=point(start._1,start._2)
 
     for((start,end)<-pointMap){
       val startPoint=point(start._1,start._2)
@@ -236,7 +341,19 @@ object TestGraphics2D{
         .link(startPoint,endPoint)
     }
 
-    startPoint.render()
+    val rampStart=point(580,2680)
+    val rampEnd=point(849,2345)
+
+    val secondRampStart=point(580,800)
+
+
+
+    new RampDownLink link(rampStart,rampEnd)
+    new StraightLink(value=>List[Int]{value})
+      .link(rampStart,secondRampStart)
+
+
+    rampStart.render()
 
     graphics2D.dispose()
 

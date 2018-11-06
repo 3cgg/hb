@@ -60,4 +60,9 @@ public class KeyValue {
     public void setValue(Value value) {
         this.value = value;
     }
+
+    @Override
+    public String toString() {
+        return family+":"+column+"=>"+value.toString();
+    }
 }

@@ -1,6 +1,7 @@
 package test.me.libme.module.hbase;
 
 import me.libme.module.hbase.HBaseConnector;
+import me.libme.module.hbase.HBaseExecutor;
 import me.libme.module.hbase.KeyValue;
 import me.libme.module.hbase.Value;
 import org.slf4j.Logger;
@@ -21,16 +22,16 @@ public class TestHBase {
 
         String tableName = "blog";
 
-        HBaseConnector.HBaseExecutor executor=new HBaseConnector().connect();
+        HBaseConnector.HBaseExecutor executor= HBaseExecutor.defaultExecutor();
         executor.tableOperations().delete(tableName);
         executor.tableOperations().create(tableName, "artitle", "author");
 
 //        createHTable(connection, "blog")
         //插入数据,重复执行为覆盖
 
-        executor.columnOperations().insert(tableName, "artitle", "engish", "002", "c++ for me");
-        executor.columnOperations().insert(tableName, "artitle", "engish", "003", "python for me");
-        executor.columnOperations().insert(tableName, "artitle", "chinese", "004", "C++ for china");
+        executor.columnOperations().insert(tableName, "002","artitle", "engish",  "c++ for me");
+        executor.columnOperations().insert(tableName, "003", "artitle", "engish", "python for me");
+        executor.columnOperations().insert(tableName, "004","artitle", "chinese",  "C++ for china");
         //删除记录
         // deleteRecord(connection,"blog","artitle","chinese","002")
         //扫描整个表
@@ -42,7 +43,7 @@ public class TestHBase {
         Map rowMap=new HashMap();
 
         map.forEach((key, value) -> {
-            rowMap.put(key,executor.queryOperations().row(tableName,"artitle"));
+            rowMap.put(key,executor.queryOperations().row(tableName,key));
         });
 
         logger.debug(rowMap.toString());

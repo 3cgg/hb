@@ -1,0 +1,8 @@
+hbase:
+  zookeeper:
+    quorum: zk.3cgg.rec
+  property:
+    clientPort: 2181
+
+
+

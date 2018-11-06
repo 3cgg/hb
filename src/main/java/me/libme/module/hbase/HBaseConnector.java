@@ -2,10 +2,7 @@ package me.libme.module.hbase;
 
 import me.libme.kernel._c.util.JStringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
@@ -22,6 +19,11 @@ import java.util.Map;
  */
 public class HBaseConnector {
 
+    private final HBaseConfig hBaseConfig;
+
+    public HBaseConnector(HBaseConfig hBaseConfig) {
+        this.hBaseConfig = hBaseConfig;
+    }
 
     public HBaseExecutor connect(){
 
@@ -56,9 +58,8 @@ public class HBaseConnector {
 
         private HBaseExecutor() {
             Configuration conf = HBaseConfiguration.create();
-//      conf.set("hbase.zookeeper.property.clientPort", "2181")
-            //    conf.set("zookeeper.znode.parent", "/hbase-unsecure")
-//        conf.set("hbase.zookeeper.quorum", config connectString)
+            conf.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(hBaseConfig.getZkPort()));
+            conf.set(HConstants.ZOOKEEPER_QUORUM, hBaseConfig.getZkHost());
 
             try {
                 this.connection= ConnectionFactory.createConnection(conf);
@@ -91,6 +92,7 @@ public class HBaseConnector {
                         while(result!=null){
                             map.put(rowConvert.convert(result.getRow()),
                                     new KeyValue(family,column, columnValueConvert.convert(family,column,result.value())));
+                            result=scanner.next();
                         }
                         return map;
                     }
@@ -124,6 +126,7 @@ public class HBaseConnector {
                                 });
                             });
                             map.put(rowConvert.convert(result.getRow()),list);
+                            result=scanner.next();
                         }
                         return map;
                     }
@@ -360,7 +363,7 @@ public class HBaseConnector {
                     TableName tn = TableName.valueOf(tableName);
                     if (admin.tableExists(tn)){
                         admin.disableTable(tn);
-                        admin.enableTable(tn);
+                        admin.deleteTable(tn);
                         LOGGER.info("delete table : "+tableName);
                     }
                 }catch (Exception e){

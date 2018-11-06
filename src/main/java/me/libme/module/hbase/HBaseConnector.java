@@ -106,10 +106,19 @@ public class HBaseConnector {
             @Override
             public Map<Value, List<KeyValue>> scan(String tableName, RowValueConvert rowConvert, ColumnValueConvert columnValueConvert, KeyValue... keyValue) {
 
+                return scan(tableName, rowConvert, columnValueConvert,null, keyValue);
+
+            }
+
+            @Override
+            public Map<Value, List<KeyValue>> scan(String tableName, RowValueConvert rowConvert, ColumnValueConvert columnValueConvert, IFilter filter, KeyValue... keyValue) {
                 try(Table table=connection.getTable(TableName.valueOf(tableName))){
                     Scan scan=new Scan();
                     for(KeyValue kv:keyValue){
                         scan.addColumn(Bytes.toBytes(kv.getFamily()),Bytes.toBytes(kv.getColumn()));
+                    }
+                    if(filter!=null){
+                        scan.setFilter(filter.filter());
                     }
 
                     try(ResultScanner scanner=table.getScanner(scan)){

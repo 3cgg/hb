@@ -1,6 +1,9 @@
 package test.me.libme.module.hbase;
 
 import me.libme.module.hbase.*;
+import me.libme.module.hbase.filter.HBaseFilter;
+import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,15 +31,22 @@ public class TestHBase {
 
     HBaseConnector.HBaseExecutor executor= HBaseExecutor.defaultExecutor();
 
+
+    private String int2LongString(int val){
+        String longVal=String.valueOf(Long.MAX_VALUE);
+        int length=longVal.length()-String.valueOf(val).length();
+        StringBuffer stringBuffer=new StringBuffer();
+        while (length-->0){
+            stringBuffer.append("0");
+        }
+        stringBuffer.append(String.valueOf(val));
+        return stringBuffer.toString();
+    }
+
     private void insert(){
 
         executor.tableOperations().delete(tableName);
         executor.tableOperations().create(tableName, metaInfoFamily, statisticsFamily);
-
-//        createHTable(connection, "blog")
-        //插入数据,重复执行为覆盖
-
-
 
         for(int i=0;i<10;i++){
             List<KeyValue> keyValues=new ArrayList<>();
@@ -48,6 +58,14 @@ public class TestHBase {
             keyValues.add(new KeyValue(metaInfoFamily,"category",category[random.nextInt(4)]));
             keyValues.add(new KeyValue(metaInfoFamily,"type",snType[random.nextInt(4)]));
             String row=new Date().getTime()+"E"+(random.nextInt(9000)+1000);
+
+            for(int j=0;j<10;j++){
+                Random numRandom=new Random();
+                Random tagRandom=new Random();
+                keyValues.add(new KeyValue(statisticsFamily,int2LongString(numRandom.nextInt(100))
+                        ,tagRandom.nextInt(2)));
+            }
+
             executor.columnOperations().insert(tableName, new StringValue(row),keyValues.toArray(new KeyValue[]{}));
         }
 
@@ -87,7 +105,10 @@ public class TestHBase {
             }else if(metaInfoFamily.equals(family)
                     &&"type".equals(column)){
                 return ColumnValueConvert.stringVal(family, column, bytes);
+            }else if(statisticsFamily.equals(family)){
+                return ColumnValueConvert.intVal(family, column, bytes);
             }
+
 
             return ColumnValueConvert.stringVal(family, column, bytes);
         }
@@ -128,6 +149,27 @@ public class TestHBase {
 
     }
 
+    private void filter(){
+
+        DefineColumnValueConvert defineColumnValueConvert=new DefineColumnValueConvert();
+
+
+        ColumnRangeFilter columnRangeFilter=
+                new ColumnRangeFilter(Bytes.toBytes(int2LongString(10)),true, Bytes.toBytes(int2LongString(99)),true);
+
+        HBaseFilter filter=new HBaseFilter(columnRangeFilter);
+
+        Map<StringValue,List<KeyValue>> any=executor.queryOperations()
+                .scan(tableName, RowValueConvert::stringVal,defineColumnValueConvert,filter);
+        any.forEach((value, keyValues) -> {
+            System.out.println(value+"=>"+keyValues);
+
+        });
+
+
+
+    }
+
 
     public static void main(String[] args) {
 
@@ -135,9 +177,15 @@ public class TestHBase {
 
 //        testHBase.insert();
 
-        testHBase.get();
+//        testHBase.get();
 
+        testHBase.filter();
 
+        System.out.println(testHBase.int2LongString(3));
+
+        System.out.println(testHBase.int2LongString(212));
+
+        System.out.println("===================");
 
 
     }

@@ -22,4 +22,7 @@ public interface QueryOperations {
 
     Map<Value,List<KeyValue>> row(String tableName, long row);
 
+    <T extends Value> Map<T,List<KeyValue>>  scan(String tableName, RowValueConvert<T> rowConvert, ColumnValueConvert columnValueConvert, IFilter filter, KeyValue... keyValue);
+
+
 }

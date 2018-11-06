@@ -3,6 +3,8 @@ package me.libme.module.hbase;
 import me.libme.kernel._c.util.Assert;
 import me.libme.kernel._c.util.JStringUtils;
 
+import java.math.BigDecimal;
+
 /**
  * Created by J on 2018/11/5.
  */
@@ -16,18 +18,45 @@ public class KeyValue {
 
     private long version;
 
-    public KeyValue(String family, String column) {
-        this(family,column,null);
+    public KeyValue(String family, String column,String value) {
+        this(family,column,new StringValue(value));
+    }
+
+    public KeyValue(String family, String column,int value) {
+        this(family,column,new IntValue(value));
+    }
+
+    public KeyValue(String family, String column,long value) {
+        this(family,column,new LongValue(value));
+    }
+
+    public KeyValue(String family, String column,float value) {
+        this(family,column,new FloatValue(value));
+    }
+
+    public KeyValue(String family, String column,double value) {
+        this(family,column,new DoubleValue(value));
+    }
+
+
+    public KeyValue(String family, String column,BigDecimal value) {
+        this(family,column,new BigDecimalValue(value));
     }
 
     public KeyValue(String family, String column, Value value) {
+        this(family,column);
+        this.value = value;
+    }
+
+    public KeyValue(String family, String column) {
         Assert.isTrue(JStringUtils.isNotNullOrEmpty(family),"family is empty.");
         Assert.isTrue(JStringUtils.isNotNullOrEmpty(column),"column is empty.");
 
         this.family = family;
         this.column = column;
-        this.value = value;
     }
+
+
 
     public long getVersion() {
         return version;

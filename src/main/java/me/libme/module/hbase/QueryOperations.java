@@ -12,7 +12,7 @@ public interface QueryOperations {
 
     <T extends Value> Map<T,KeyValue>  scan(String tableName, String family, String column, RowValueConvert rowConvert, ColumnValueConvert columnValueConvert);
 
-    <T extends Value> Map<T,List<KeyValue>>  scan(String tableName, RowValueConvert rowConvert, ColumnValueConvert columnValueConvert, KeyValue... keyValue);
+    <T extends Value> Map<T,List<KeyValue>>  scan(String tableName, RowValueConvert<T> rowConvert, ColumnValueConvert columnValueConvert, KeyValue... keyValue);
 
     <T extends Value> Map<T,List<KeyValue>> row(String tableName, T row,ColumnValueConvert columnValueConvert);
 

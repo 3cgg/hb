@@ -86,6 +86,7 @@ public class HBaseConnector {
             public  Map<Value, KeyValue> scan(String tableName, String family, String column, RowValueConvert rowConvert, ColumnValueConvert columnValueConvert) {
                 try(Table table=connection.getTable(TableName.valueOf(tableName))){
                     Scan scan=new Scan();
+                    scan.addColumn(Bytes.toBytes(family),Bytes.toBytes(column));
                     try(ResultScanner scanner=table.getScanner(scan)){
                         Map<Value,KeyValue> map=new HashMap<>();
                         Result result=scanner.next();
@@ -245,6 +246,7 @@ public class HBaseConnector {
             public Map<Value,KeyValue> get(String tableName, Value row, String family, String column, ColumnValueConvert columnValueConvert) {
                 try(Table table=connection.getTable(TableName.valueOf(tableName))){
                     Get get=new Get(row.val());
+                    get.addColumn(Bytes.toBytes(family),Bytes.toBytes(column));
                     Result result=table.get(get);
                     Map<Value,KeyValue> map=new HashMap<>();
                     map.put(row,new KeyValue(family,column, columnValueConvert.convert(family,column,result.value())));

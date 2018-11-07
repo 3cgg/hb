@@ -5,10 +5,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>libme.modules</groupId>
-    <artifactId>hbase</artifactId>
+    <artifactId>cpp-hbase</artifactId>
     <packaging>jar</packaging>
-    <version>2.11_1.0.1</version>
-    <name>HBase Scala Utility</name>
+    <version>1.0.1</version>
+    <name>HBase Utility</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

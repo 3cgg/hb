@@ -24,5 +24,6 @@ public interface QueryOperations {
 
     <T extends Value> Map<T,List<KeyValue>>  scan(String tableName, RowValueConvert<T> rowConvert, ColumnValueConvert columnValueConvert, IFilter filter, KeyValue... keyValue);
 
+    <T extends Value> Map<T,List<KeyValue>>  scan(String tableName, RowValueConvert<T> rowConvert, ColumnValueConvert columnValueConvert, IFilter filter, ScanConfig scanConfig, KeyValue... keyValue);
 
 }

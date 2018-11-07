@@ -112,6 +112,11 @@ public class HBaseConnector {
 
             @Override
             public Map<Value, List<KeyValue>> scan(String tableName, RowValueConvert rowConvert, ColumnValueConvert columnValueConvert, IFilter filter, KeyValue... keyValue) {
+                return scan(tableName, rowConvert, columnValueConvert, filter, null,keyValue);
+            }
+
+            @Override
+            public Map<Value, List<KeyValue>> scan(String tableName, RowValueConvert rowConvert, ColumnValueConvert columnValueConvert, IFilter filter, ScanConfig scanConfig, KeyValue... keyValue) {
                 try(Table table=connection.getTable(TableName.valueOf(tableName))){
                     Scan scan=new Scan();
                     for(KeyValue kv:keyValue){
@@ -119,6 +124,17 @@ public class HBaseConnector {
                     }
                     if(filter!=null){
                         scan.setFilter(filter.filter());
+                    }
+
+                    if(scanConfig!=null){
+                        if(scanConfig.getCacheing()>0){
+                            scan.setCaching(scanConfig.getCacheing());
+                        }
+
+                        if(scanConfig.getBatch()>0){
+                            scan.setBatch(scanConfig.getBatch());
+                        }
+
                     }
 
                     try(ResultScanner scanner=table.getScanner(scan)){
@@ -146,6 +162,7 @@ public class HBaseConnector {
                     throw new RuntimeException(e);
                 }
             }
+
 
             @Override
             public Map<Value, List<KeyValue>> row(String tableName, Value row,ColumnValueConvert columnValueConvert) {

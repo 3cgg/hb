@@ -2,7 +2,7 @@ package test.me.libme.module.hbase;
 
 import me.libme.module.hbase.*;
 import me.libme.module.hbase.filter.HBaseFilter;
-import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
+import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,9 +12,9 @@ import java.util.*;
 /**
  * Created by J on 2018/1/17.
  */
-public class TestHBase {
+public class TestCarInfo {
 
-    private static Logger logger= LoggerFactory.getLogger(TestHBase.class);
+    private static Logger logger= LoggerFactory.getLogger(TestCarInfo.class);
 
     String[] color=new String[]{"red","black","red","orange"};
     double[] weight=new double[]{1.5,1.6,2.0,2.2};
@@ -29,18 +29,14 @@ public class TestHBase {
     String metaInfoFamily="meta-info";
     String statisticsFamily="statistics";
 
+    int columnCount=999;
+    int maxLength=String.valueOf(columnCount).length();
+
     HBaseConnector.HBaseExecutor executor= HBaseExecutor.defaultExecutor();
 
 
     private String int2LongString(int val){
-        String longVal=String.valueOf(Long.MAX_VALUE);
-        int length=longVal.length()-String.valueOf(val).length();
-        StringBuffer stringBuffer=new StringBuffer();
-        while (length-->0){
-            stringBuffer.append("0");
-        }
-        stringBuffer.append(String.valueOf(val));
-        return stringBuffer.toString();
+        return Number2String.long2LongString(val,maxLength);
     }
 
     private void insert(){
@@ -57,12 +53,12 @@ public class TestHBase {
             keyValues.add(new KeyValue(metaInfoFamily,"width",width[random.nextInt(4)]));
             keyValues.add(new KeyValue(metaInfoFamily,"category",category[random.nextInt(4)]));
             keyValues.add(new KeyValue(metaInfoFamily,"type",snType[random.nextInt(4)]));
-            String row=new Date().getTime()+"E"+(random.nextInt(9000)+1000);
+            String row="SZE"+(random.nextInt(90000)+10000);
 
-            for(int j=0;j<10;j++){
+            for(int j=0;j<columnCount;j++){
                 Random numRandom=new Random();
                 Random tagRandom=new Random();
-                keyValues.add(new KeyValue(statisticsFamily,int2LongString(numRandom.nextInt(100))
+                keyValues.add(new KeyValue(statisticsFamily,int2LongString(numRandom.nextInt(columnCount))
                         ,tagRandom.nextInt(2)));
             }
 
@@ -136,7 +132,6 @@ public class TestHBase {
         });
 
 
-
         String row=anyOne.get(0);
         Map<Value, KeyValue> length=executor.columnOperations().get(tableName,new StringValue(row),metaInfoFamily,"length",ColumnValueConvert::doubleVal);
 
@@ -156,8 +151,12 @@ public class TestHBase {
 
         ColumnRangeFilter columnRangeFilter=
                 new ColumnRangeFilter(Bytes.toBytes(int2LongString(10)),true, Bytes.toBytes(int2LongString(99)),true);
+        FamilyFilter familyFilter=new FamilyFilter(CompareFilter.CompareOp.EQUAL,
+                new BinaryComparator(Bytes.toBytes(statisticsFamily)));
 
-        HBaseFilter filter=new HBaseFilter(columnRangeFilter);
+        FilterList filterList=new FilterList(familyFilter,columnRangeFilter);
+
+        HBaseFilter filter=new HBaseFilter(filterList);
 
         Map<StringValue,List<KeyValue>> any=executor.queryOperations()
                 .scan(tableName, RowValueConvert::stringVal,defineColumnValueConvert,filter);
@@ -173,7 +172,7 @@ public class TestHBase {
 
     public static void main(String[] args) {
 
-        TestHBase testHBase=new TestHBase();
+        TestCarInfo testHBase=new TestCarInfo();
 
 //        testHBase.insert();
 
@@ -181,9 +180,16 @@ public class TestHBase {
 
         testHBase.filter();
 
-        System.out.println(testHBase.int2LongString(3));
+//        System.out.println(testHBase.int2LongString(3));
+//
+//        System.out.println(testHBase.int2LongString(212));
 
-        System.out.println(testHBase.int2LongString(212));
+        long time=new Date().getTime();
+
+        System.out.println(time);
+//        System.out.println(Number2String.long2LongString(time,1));
+
+//        System.out.println(Number2String.long2LongString(12,1));
 
         System.out.println("===================");
 

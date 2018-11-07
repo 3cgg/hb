@@ -17,7 +17,7 @@ public interface ColumnValueConvert<T extends Value> extends JParser {
 
     static LongValue longVal(String family,String column,byte[] bytes){return new LongValue(Bytes.toLong(bytes));}
 
-    static DoubleValue doubleVal(String family,String column,byte[] bytes){return new DoubleValue(Bytes.toDouble(bytes));}
+    static DoubleValue doubleVal(String family,String column,byte[] bytes){return new DoubleValue(Bytes.toLong(bytes));}
 
     static FloatValue floatVal(String family,String column,byte[] bytes){return new FloatValue(Bytes.toFloat(bytes));}
 

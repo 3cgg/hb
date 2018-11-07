@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 /**
  * Created by J on 2018/11/5.
  */
-public class KeyValue {
+public class KeyValue  {
 
     private String family;
 

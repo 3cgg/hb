@@ -16,4 +16,6 @@ public interface TableOperations {
 
     void delete(String tableName);
 
+    boolean exists(String tableName);
+
 }

@@ -401,6 +401,17 @@ public class HBaseConnector {
 
 
             }
+
+            @Override
+            public boolean exists(String tableName) {
+                try(Admin admin = connection.getAdmin()) {
+                    TableName tn = TableName.valueOf(tableName);
+                    return admin.tableExists(tn);
+                }catch (Exception e){
+                    LOGGER.error(e.getMessage(),e);
+                    throw new RuntimeException(e);
+                }
+            }
         }
 
 

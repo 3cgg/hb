@@ -4,10 +4,10 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>libme.modules</groupId>
+    <groupId>libme.modules.hbase</groupId>
     <artifactId>cpp-hbase</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.1</version>
+    <version>2.0.0</version>
     <name>HBase Utility</name>
 
     <properties>
